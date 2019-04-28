@@ -4,23 +4,24 @@ import random
 import pathlib
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-TRAINING_DATA_DIR = r'specgrams'
+TRAINING_DATA_DIR = 'specgrams'
 
 def gen_model():
     model = tf.keras.models.Sequential([
-      tf.keras.layers.Flatten(input_shape=(256, 128, 3)),
-      tf.keras.layers.Dense(64, activation='relu'),
-      tf.keras.layers.Dense(1)
+        tf.keras.layers.Flatten(input_shape=(256, 128, 3)),
+        tf.keras.layers.Dense(512),
+        tf.keras.layers.Dense(512),
+        tf.keras.layers.Dense(1)
     ])
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
+                  loss='mean_squared_error',
+                  metrics=['mae'])
 
     return model
 
 
-def fetch_batch(batch_size=1000):
+def fetch_batch(batch_size=256):
     all_image_paths = []
     all_image_labels = []
 
@@ -29,6 +30,9 @@ def fetch_batch(batch_size=1000):
     
     for file in files:
         file = str(file)
+        if file[-4:].upper() != '.PNG':
+            continue
+        
         all_image_paths.append(os.path.abspath(file))
         label = file[:-4].split('-')[2:3]
         label = float(label[0]) / 200
@@ -51,10 +55,25 @@ def fetch_batch(batch_size=1000):
     ds = ds.shuffle(buffer_size=len(os.listdir(TRAINING_DATA_DIR)))
     ds = ds.repeat()
     ds = ds.batch(batch_size)
-    ds = ds.prefetch(buffer_size=AUTOTUNE)
+    ds = ds.prefetch(buffer_size=1)
     
     return ds
 
-ds = fetch_batch()
-model = gen_model()
-model.fit(ds, epochs=1, steps_per_epoch=10)
+def run(epochs, save_path):
+    ds = fetch_batch()
+    model = gen_model()
+    model.fit(ds, epochs=int(epochs), steps_per_epoch=500)
+
+    model.save('temp/' + save_path)
+
+if __name__ == "__main__":
+    argv = sys.argv[1:]
+    if len(argv) < 2:
+        exit('Program requires 2 arguments: number of epochs and save path.')
+        
+    try:
+        os.makedirs("temp")
+    except FileExistsError:
+        pass
+    
+    run(*argv)

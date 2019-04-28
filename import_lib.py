@@ -85,7 +85,7 @@ if __name__ == "__main__":
     if len(argv) < 1:
         exit('Please specify a library file')
 
-    if (!os.path.isfile(argv[0])):
+    if (os.path.isfile(argv[0]) == False):
         exit('Library file not found: "%s"' % argv[0])
         
     try:

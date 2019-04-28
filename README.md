@@ -21,9 +21,17 @@ Assuming you have your library xml file located at `lib.xml` in the project root
 
 To train the model you can run the train script as follows:
 
-    $ python training.py
+    $ python training_bpm_only.py X model.h5
     
-*Note: this is not yet functional.*
+Here, `X` is the number of epochs to train for and `model.h5` is the filename that the model will be saved as in the `temp` directory.
+
+## Using The Model
+
+Once you have a trained model you can use the `predict.py` script to predict the BPM of a particular spectrogram image file like so:
+
+    $ python predict.py temp/model.h5 test_image.png
+
+This should print out the predicted BPM value to the console.
 
 ## License
 
