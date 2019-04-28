@@ -52,6 +52,8 @@ def load_tracks(lib_xml_file):
         if location[-4:].upper() != '.WAV':
             print('None wav file found, skipping... (%s)' % location)
             continue
+        if (len(track.findall('TEMPO')) != 1):
+            print('Track must have exactly 1 tempo node, skipping...')
         tracks.append(Track(
             trackid.get('Key'),
             location,
@@ -82,4 +84,14 @@ if __name__ == "__main__":
     argv = sys.argv[1:]
     if len(argv) < 1:
         exit('Please specify a library file')
+
+    if (!os.path.isfile(argv[0])):
+        exit('Library file not found: "%s"' % argv[0])
+        
+    try:
+        os.makedirs("specgrams")
+    except FileExistsError:
+        # directory already exists
+        pass
+    
     generate_samples(*argv)

@@ -4,7 +4,7 @@ import random
 import pathlib
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
-TRAINING_DATA_DIR = r'C:\Users\cainy\Desktop\BeatNet\specgrams'
+TRAINING_DATA_DIR = r'specgrams'
 
 def gen_model():
     model = tf.keras.models.Sequential([
@@ -29,9 +29,9 @@ def fetch_batch(batch_size=1000):
     
     for file in files:
         file = str(file)
-        all_image_paths.append(file)
+        all_image_paths.append(os.path.abspath(file))
         label = file[:-4].split('-')[2:]
-        label = [float(label[0]), int(label[1]) / 1000.0]
+        label = float(label[0]) / 200, int(label[1]) / 1000.0
         all_image_labels.append(label)
 
     def preprocess_image(path):
@@ -44,8 +44,10 @@ def fetch_batch(batch_size=1000):
     def preprocess(path, label):
         return preprocess_image(path), label
     
-    ds = tf.data.Dataset.from_tensor_slices((all_image_paths, all_image_labels))
-    ds = ds.map(preprocess)
+    path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
+    image_ds = path_ds.map(preprocess_image, num_parallel_calls=AUTOTUNE)
+    label_ds = tf.data.Dataset.from_tensor_slices(all_image_labels)
+    ds = tf.data.Dataset.zip((image_ds, label_ds))
     ds = ds.shuffle(buffer_size=len(os.listdir(TRAINING_DATA_DIR)))
     ds = ds.repeat()
     ds = ds.batch(batch_size)
@@ -55,4 +57,4 @@ def fetch_batch(batch_size=1000):
 
 ds = fetch_batch()
 model = gen_model()
-model.fit(ds, epochs=1, steps_per_epoch=3)
+model.fit(ds, epochs=1, steps_per_epoch=10)
