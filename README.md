@@ -2,7 +2,7 @@
 
 Predict the BPM of music using neural networks.
 
-## Prerequisits
+## Prerequisites
 
 The following python packages are required and can be installed using the `pip install` command.
 
@@ -24,3 +24,7 @@ To train the model you can run the train script as follows:
     $ python training.py
     
 *Note: this is not yet functional.*
+
+## License
+
+This project is not licensed. All rights reserved.
