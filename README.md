@@ -16,6 +16,8 @@ The network trains over a set of .wav music files. In order to produce training 
 Assuming you have your library xml file located at `lib.xml` in the project root you can produce training data by running the `import_lib.py` script as follows, where `XXX` is an optional parameter for the number of samples to produce:
 
     $ python import_lib.py lib.xml XXX
+	
+Included with the project is a zip file containing 1000 training data samples. Extract this file in the project root to begin training right away using this training data.
     
 ## Training The Model
 
