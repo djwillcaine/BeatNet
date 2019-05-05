@@ -8,12 +8,11 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 TRAINING_DATA_DIR = 'specgrams'
 
 def gen_model():
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Flatten(input_shape=(256, 128, 3)),
-        tf.keras.layers.Dense(512),
-        tf.keras.layers.Dense(512),
-        tf.keras.layers.Dense(1)
-    ])
+    inputs = tf.keras.layers.Input(shape=(256, 128, 3), dtype=tf.float32)
+    d1 = tf.keras.layers.Dense(256, activation='relu')(inputs)
+    d2 = tf.keras.layers.Dense(2)(d1)
+    bpm, inizio = tf.keras.layers.Lambda(tf.unstack, arguments=dict(axis=-1))(d2)
+    model = tf.keras.models.Model(inputs=inputs, outputs=[bpm, inizio])
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
                   loss='mean_squared_error',
@@ -24,7 +23,8 @@ def gen_model():
 
 def fetch_batch(batch_size=256):
     all_image_paths = []
-    all_image_labels = []
+    all_image_bpms = []
+    all_image_inizios = []
 
     data_root = pathlib.Path(TRAINING_DATA_DIR)
     files = data_root.iterdir()
@@ -35,9 +35,12 @@ def fetch_batch(batch_size=256):
             continue
         
         all_image_paths.append(os.path.abspath(file))
-        label = file[:-4].split('-')[2:3]
-        label = float(label[0]) / 200
-        all_image_labels.append(label)
+        bpm, inizio = file[:-4].split('-')[2:]
+        bpm = float(bpm) / 200
+        inizio = int(inizio) / 1000
+        
+        all_image_bpms.append(bpm)
+        all_image_inizios.append(inizio)
 
     def preprocess_image(path):
         img_raw = tf.io.read_file(path)
@@ -47,12 +50,14 @@ def fetch_batch(batch_size=256):
         return image
 
     def preprocess(path, label):
-        return preprocess_image(path), label
+        return preprocess_image(path), tf.unstack(label, axis=-1)
 
     path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
     image_ds = path_ds.map(preprocess_image, num_parallel_calls=AUTOTUNE)
-    label_ds = tf.data.Dataset.from_tensor_slices(all_image_labels)
-    ds = tf.data.Dataset.zip((image_ds, label_ds))
+    bpm_ds = tf.data.Dataset.from_tensor_slices(all_image_bpms)
+    inizio_ds = tf.data.Dataset.from_tensor_slices(all_image_inizios)
+    
+    ds = tf.data.Dataset.zip((image_ds, (bpm_ds, inizio_ds)))
     ds = ds.shuffle(buffer_size=len(os.listdir(TRAINING_DATA_DIR)))
     ds = ds.repeat()
     ds = ds.batch(batch_size)
@@ -63,7 +68,7 @@ def fetch_batch(batch_size=256):
 def run(epochs, save_path):
     ds = fetch_batch()
     model = gen_model()
-    model.fit(ds, epochs=int(epochs), steps_per_epoch=500)
+    model.fit(ds, epochs=int(epochs), steps_per_epoch=50)
 
     model.save('temp/' + save_path)
 
