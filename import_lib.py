@@ -34,7 +34,7 @@ class Track:
         self.sample_inizio = int(np.round(offset_samples / self.frame_rate, 3) * 1000)
 
     def export_specgram(self):
-        plt.figure(figsize=(2.56, 1.28), frameon=False).add_axes([0, 0, 1, 1])
+        plt.figure(figsize=(2.56, 0.32), frameon=False).add_axes([0, 0, 1, 1])
         plt.axis('off')
         plt.specgram(self.samples, Fs=self.frame_rate)
         filename = ('specgrams/%s-%s-%s-%s.png' %

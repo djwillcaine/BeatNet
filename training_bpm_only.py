@@ -9,15 +9,19 @@ TRAINING_DATA_DIR = 'specgrams'
 
 def gen_model():
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Flatten(input_shape=(256, 128, 3)),
-        tf.keras.layers.Dense(512),
-        tf.keras.layers.Dense(512),
+        tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(256, 32, 3)),
+        tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.Dropout(0.25),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(1)
     ])
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
-                  loss='mean_squared_error',
-                  metrics=['mae'])
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
     return model
 
@@ -42,7 +46,7 @@ def fetch_batch(batch_size=256):
     def preprocess_image(path):
         img_raw = tf.io.read_file(path)
         image = tf.image.decode_png(img_raw, channels=3)
-        image = tf.image.resize(image, [256, 128])
+        image = tf.image.resize(image, [256, 32])
         image /= 255.0
         return image
 
