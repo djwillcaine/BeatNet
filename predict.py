@@ -11,7 +11,8 @@ def predict(model_path, image_path):
     image /= 255.0
     image = tf.reshape(image, (1, 256, 32, 3))
 
-    print(model.predict(image))
+    result = model.predict(image)
+    print(result[0][0] * 200)
 
 
 if __name__ == "__main__":
