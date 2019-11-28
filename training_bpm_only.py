@@ -20,8 +20,8 @@ def gen_model():
     ])
 
     model.compile(optimizer=tf.keras.optimizers.Adam(),
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+                  loss='mean_squared_error',
+                  metrics=['mae'])
 
     return model
 
@@ -68,7 +68,7 @@ def run(epochs, save_path):
     ds = fetch_batch()
     model = gen_model()
     model.fit(ds, epochs=int(epochs), steps_per_epoch=500)
-
+	
     model.save('temp/' + save_path)
 
 if __name__ == "__main__":
