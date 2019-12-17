@@ -22,7 +22,7 @@ class Track:
         audio = AudioSegment.from_file(self.location)
         audio = audio.set_channels(1).set_frame_rate(FRAME_RATE)
         samples = audio.get_array_of_samples()
-        start = npm.random.randint(BUFFER, len(samples) - BUFFER)
+        start = np.random.randint(BUFFER, len(samples) - BUFFER)
         chunk = samples[start:start + CHUNK_SIZE]
 
         filename = ('specgrams/%s-%s-%s.png' % (self.trackid, start, self.bpm))
