@@ -37,13 +37,17 @@ def load_tracks(lib_xml_file):
     tree = ET.parse(lib_xml_file)
     root = tree.getroot()
     tracks = {}
-    
+
+    valid = 0
+    skipped = 0
     for trackid in root.find('PLAYLISTS').find('NODE').find('NODE[@Name="BEATNET"]').iter('TRACK'):
         track = root.find('COLLECTION').find('TRACK[@TrackID="' + trackid.get('Key') + '"]')
         location = unquote(track.get('Location')).replace('file://localhost/', '')
-        
+
         if (len(track.findall('TEMPO')) != 1):
-            print('Track must have exactly 1 tempo node, skipping...')
+            skipped += 1
+            continue
+        valid += 1
             
         bpm = float(track.find('TEMPO').get('Bpm'))
         idx = int(bpm)
@@ -56,10 +60,14 @@ def load_tracks(lib_xml_file):
             location,
             bpm
             ))
+    print("Found %d valid tracks (skipped %d)" % (valid, skipped))
     return tracks
 
-def generate_samples(lib_xml_file, n=1000):
+def generate_samples(lib_xml_file='lib.xml', n=1000):
     n = int(n)
+
+    if (os.path.isfile(lib_xml_file) == False):
+        sys.exit('Library file not found: "%s"' % lib_xml_file)
     
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
@@ -78,17 +86,11 @@ def generate_samples(lib_xml_file, n=1000):
     print('\nDone.')
 
 if __name__ == "__main__":
-    argv = sys.argv[1:]
-    if len(argv) < 1:
-        exit('Please specify a library file')
-
-    if (os.path.isfile(argv[0]) == False):
-        exit('Library file not found: "%s"' % argv[0])
-        
     try:
         os.makedirs("specgrams")
     except FileExistsError:
         # directory already exists
         pass
     
+    argv = sys.argv[1:]
     generate_samples(*argv)
