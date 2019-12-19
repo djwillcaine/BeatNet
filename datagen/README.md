@@ -9,7 +9,6 @@
 	- There are no long periods of silence in the track (other than the first or last 5 seconds).
 	- Selecting a broad range of BPMs is more important that selecting lots of tracks at the same BPM.
 
-
 	<img src="screenshots/step2.png" width="800" />
 
 3. Once you have finished producing the playlist, go to **File > Export Collection in xml format** to export your library.
