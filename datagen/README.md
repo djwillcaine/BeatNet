@@ -2,9 +2,9 @@
 
 ## Instructions For Use
 
-1. Download the generator from [here](https://github.com/cainy393/BeatNet/releases/download/v0.3/v0.3.zip) and extract the zip file to somewhere convenient such as the Desktop.
+1. Download the generator from [here](https://github.com/cainy393/BeatNet/releases/download/v0.3.1/v0.3.1.zip) and extract the zip file to somewhere convenient such as the Desktop.
 
-	[![](https://dabuttonfactory.com/button.png?t=Download&f=Open+Sans-Bold&ts=20&tc=fff&tshs=1&tshc=000&hp=20&vp=8&c=round&bgt=unicolored&bgc=3d85c6)](https://github.com/cainy393/BeatNet/releases/download/v0.3/v0.3.zip)
+	[![](https://dabuttonfactory.com/button.png?t=Download&f=Open+Sans-Bold&ts=20&tc=fff&tshs=1&tshc=000&hp=20&vp=8&c=round&bgt=unicolored&bgc=3d85c6)](https://github.com/cainy393/BeatNet/releases/download/v0.3.1/v0.3.1.zip)
 
 2. Open up your Rekordbox software, create a new playlist named "BEATNET" and add as many tracks as you can that meet the following criterea:
 	- The BPM is accurate throughout the entire track. Only tracks with a constant, unchanging BPM throughout the entire track can be used.
