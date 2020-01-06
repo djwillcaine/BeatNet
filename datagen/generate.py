@@ -79,6 +79,8 @@ def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('\nDone.')
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    
     try:
         os.makedirs("specgrams")
     except FileExistsError:
