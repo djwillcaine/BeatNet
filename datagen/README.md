@@ -2,7 +2,7 @@
 
 ## Instructions For Use
 
-1. Download the generator from [here](https://github.com/cainy393/BeatNet/releases/download/v0.2/v0.2.zip) and extract the zip file to somewhere convenient such as the Desktop.
+1. Download the generator from [here](https://github.com/cainy393/BeatNet/releases/download/v0.3/v0.3.zip) and extract the zip file to somewhere convenient such as the Desktop.
 
 2. Open up your Rekordbox software, create a new playlist named "BEATNET" and add as many tracks as you can that meet the following criterea:
 	- The BPM is accurate throughout the entire track. Only tracks with a constant, unchanging BPM throughout the entire track can be used.
@@ -24,7 +24,7 @@
 
 	<img src="screenshots/step5.png" width="600" />
 	
-6. After a short wait, you should see a window like the one shown below. Please enter a number of images to produce and hit enter. At least 1000 is recommended which will likely take around 30 minutes to complete.
+6. After a short wait, you should see a window like the one shown below. Please enter a number of images to produce and hit enter. At least 1000 is recommended which will likely take around 10-15 minutes to complete.
 
 	<img src="screenshots/step6.png" width="600" />
 
