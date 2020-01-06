@@ -11,6 +11,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 FRAME_RATE = 22050
 CHUNK_SIZE = FRAME_RATE * 2
 BUFFER = FRAME_RATE * 5
+PROGRESS_BAR_SIZE = 50
 
 class Track:
     def __init__(self, trackid, location, bpm):
@@ -36,7 +37,7 @@ class Track:
 def load_tracks(lib_xml_file):
     tree = ET.parse(lib_xml_file)
     root = tree.getroot()
-    tracks = {}
+    tracks = []
 
     valid = 0
     skipped = 0
@@ -49,39 +50,28 @@ def load_tracks(lib_xml_file):
             continue
         valid += 1
             
-        bpm = float(track.find('TEMPO').get('Bpm'))
-        idx = int(bpm)
-        
-        if idx not in tracks.keys():
-            tracks[idx] = []
-            
-        tracks[idx].append(Track(
+        tracks.append(Track(
             trackid.get('Key'),
             location,
-            bpm
+            track.find('TEMPO').get('Bpm')
             ))
     print("Found %d valid tracks (skipped %d)" % (valid, skipped))
     return tracks
 
 def generate_samples(lib_xml_file='lib.xml', n=1000):
-    n = int(n)
-
-    if (os.path.isfile(lib_xml_file) == False):
-        sys.exit('Library file not found: "%s"' % lib_xml_file)
-    
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
 
     print('Generating Spectrograms...')
     for i in range(n):
-        idx = np.random.choice(list(tracks.keys()))
-        track = np.random.choice(tracks[idx])
+        track = np.random.choice(tracks)
         track.generate_random_specgram()
-        progress = i / n * 100.0
-        print('\r[%s%s] %3.1f%%' % ('=' * int(progress/2),
-                                    ' ' * (50 - int(progress/2)),
-                                    progress),
-              end='', flush=True)
+        progress = i / n
+        print('\r[%s%s] %3.1f%%' % (
+            '=' * int(PROGRESS_BAR_SIZE * progress),
+            ' ' * (PROGRESS_BAR_SIZE - int(PROGRESS_BAR_SIZE * progress)),
+            progress * 100
+            ), end='', flush=True)
     
     print('\nDone.')
 
@@ -91,6 +81,18 @@ if __name__ == "__main__":
     except FileExistsError:
         # directory already exists
         pass
+
+    lib_path = ''
+    for file in os.listdir('./'):
+        if not file.endswith('.xml'): continue
+        lib_path = file
+
+    if not os.path.isfile(lib_path):
+        input("Library file not found, press any key to exit...")
+        sys.exit(0)
+
+    n = int(input("How many images would you like to generate? "))
     
-    argv = sys.argv[1:]
-    generate_samples(*argv)
+    generate_samples(lib_path, n)
+    input("Finished. Press any key to close...")
+    sys.exit(0)

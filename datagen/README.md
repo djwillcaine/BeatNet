@@ -6,6 +6,7 @@
 
 2. Open up your Rekordbox software, create a new playlist named "BEATNET" and add as many tracks as you can that meet the following criterea:
 	- The BPM is accurate throughout the entire track. Only tracks with a constant, unchanging BPM throughout the entire track can be used.
+	- The BPM is between 70 and 180.
 	- There are no long periods of silence in the track (other than the first or last 5 seconds).
 	- Selecting a broad range of BPMs is more important that selecting lots of tracks at the same BPM.
 
@@ -23,23 +24,11 @@
 
 	<img src="screenshots/step5.png" width="600" />
 	
-6. After a short wait, you should see a window like the one shown below. It will probably take around 30 minutes to finish running, possibly even longer.
+6. After a short wait, you should see a window like the one shown below. Please enter a number of images to produce and hit enter. At least 1000 is recommended which will likely take around 30 minutes to complete.
 
 	<img src="screenshots/step6.png" width="600" />
 
 7. Once the generator has finished the window will close and you should see a new directory named **specgrams** in the folder from earlier. This is the generated data, you should zip up this folder before sending it.
-
-## Advanced Options
-
-You can run the generator from the command line in order to configure the location of the library file and the number of training images to produce. To do so first press **Windows Key + R** to open the run dialogue. Now type **cmd** into the text box and hit enter. Navigate to the working directory using the following command:
-
-    > cd "C:/Users/cainy/Desktop/BeatNet DataGen"
-	
-Don't forget to change the directory location shown above to wherever you extracted the zip file from step 1.
-
-Now, to run the generator, simply use the following command, changing the values according to your needs.
-
-    > ./generator.exe lib.xml 1000
 	
 ## Running From Source
 
@@ -64,8 +53,5 @@ $ pip install -r requirements.txt
 4. Run the `generate.py` script.
 
 ```bash
-$ python generate.py [library_location] [images_to_produce]
-
-# Default values...
-$ python generate.py lib.xml 1000
+$ python generate.py
 ```
