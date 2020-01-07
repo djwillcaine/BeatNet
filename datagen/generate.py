@@ -1,6 +1,5 @@
 import os
 import sys
-import wave
 from pydub import AudioSegment
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,9 +7,11 @@ import lxml.etree as ET
 from urllib.parse import unquote
 import multiprocessing
 
+BPM_VARIATION_AMOUNT = 0.1
+BPM_VARIATION_PROB = 0.2
 FRAME_RATE = 22050
-CHUNK_SIZE = FRAME_RATE * 2
-BUFFER = FRAME_RATE * 5
+SAMPLE_LENGTH = 2
+BUFFER = 5
 PROGRESS_BAR_SIZE = 50
 
 class Track:
@@ -38,23 +39,40 @@ def load_tracks(lib_xml_file):
         tracks.append(Track(
             trackid.get('Key'),
             location,
-            track.find('TEMPO').get('Bpm')
+            float(track.find('TEMPO').get('Bpm'))
             ))
     print("Found %d valid tracks (skipped %d)" % (valid, skipped))
     return tracks
 
 def generate_random_specgram(track):
+    # Perform random variations to the BPM (sometimes)
+    frame_rate = FRAME_RATE
+    bpm = track.bpm
+    if np.random.random() < BPM_VARIATION_PROB:
+        variation = 1 - BPM_VARIATION_AMOUNT + (
+            np.random.random() * BPM_VARIATION_AMOUNT * 2)
+        bpm *= variation
+        bpm = round(bpm, 2)
+        frame_rate *= (bpm / track.bpm)
+        frame_rate = int(frame_rate)
+
+    # Read audio data from file
     audio = AudioSegment.from_file(track.location)
     audio = audio.set_channels(1).set_frame_rate(FRAME_RATE)
     samples = audio.get_array_of_samples()
-    start = np.random.randint(BUFFER, len(samples) - BUFFER)
-    chunk = samples[start:start + CHUNK_SIZE]
+    chunk_length = int(SAMPLE_LENGTH * frame_rate)
+    start = np.random.randint(
+        BUFFER * FRAME_RATE,
+        len(samples) - (BUFFER * FRAME_RATE) - chunk_length)
+    chunk = samples[start:start + chunk_length]
 
-    filename = ('specgrams/%s-%s-%s.png' % (track.trackid, start, track.bpm))
-
-    plt.figure(figsize=(2.56, 0.32), frameon=False).add_axes([0, 0, 1, 1])
+    # Plot specgram and save to file
+    filename = ('specgrams/%s-%s-%s.png' % (track.trackid, start, bpm))
+    plt.figure(figsize=(2.56, 0.64), frameon=False).add_axes([0, 0, 1, 1])
     plt.axis('off')
-    plt.specgram(chunk, Fs = FRAME_RATE)
+    plt.specgram(chunk, Fs=frame_rate)
+    plt.xlim(0, SAMPLE_LENGTH)
+    plt.ylim(0, frame_rate / SAMPLE_LENGTH)
     plt.savefig(filename)
     plt.close()
 
