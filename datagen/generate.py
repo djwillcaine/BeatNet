@@ -72,7 +72,7 @@ def generate_random_specgram(track):
     plt.axis('off')
     plt.specgram(chunk, Fs=frame_rate)
     plt.xlim(0, SAMPLE_LENGTH)
-    plt.ylim(0, frame_rate / SAMPLE_LENGTH)
+    plt.ylim(0, frame_rate / 2)
     plt.savefig(filename)
     plt.close()
 
