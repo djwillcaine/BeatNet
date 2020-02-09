@@ -10,7 +10,7 @@ TRAINING_DATA_DIR = 'specgrams'
 
 def gen_model():
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(256, 32, 3)),
+        tf.keras.layers.Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(256, 64, 3)),
         tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         tf.keras.layers.Dropout(0.25),
@@ -42,7 +42,7 @@ def fetch_batch(batch_size=256):
             continue
         
         label = file[:-4].split('-')[2]
-        label = float(label[0]) / 200
+        label = float(label[0])
         
         all_image_paths.append(os.path.abspath(file))
         all_image_labels.append(label)
@@ -52,7 +52,7 @@ def fetch_batch(batch_size=256):
     def preprocess_image(path):
         img_raw = tf.io.read_file(path)
         image = tf.image.decode_png(img_raw, channels=3)
-        image = tf.image.resize(image, [256, 32])
+        image = tf.image.resize(image, [256, 64])
         image /= 255.0
         return image
 
@@ -70,7 +70,7 @@ def fetch_batch(batch_size=256):
     
     return ds
 
-def run(epochs=10):
+def run(epochs=5):
     ds = fetch_batch()
     model = gen_model()
     model.fit(ds, epochs=int(epochs), steps_per_epoch=500)

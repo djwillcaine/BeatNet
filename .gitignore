@@ -1,2 +1,4 @@
 specgrams/
+eval_set/
 temp/*
+*.h5
