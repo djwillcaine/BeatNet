@@ -1,4 +1,3 @@
-specgrams/
-eval_set/
+data/*
 temp/*
 *.h5
