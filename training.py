@@ -59,8 +59,6 @@ def fetch_ds(dir_name='data/training', batch_size=128):
     ds = ds.repeat()
     ds = ds.batch(batch_size)
     ds = ds.prefetch(buffer_size=1)
-
-    print(all_image_labels)
     
     return ds
 
