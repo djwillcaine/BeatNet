@@ -39,7 +39,7 @@ def fetch_ds(dir_name='data/training', batch_size=128):
             continue
         
         label = file[:-4].split('-')[2]
-        label = float(label[0])
+        label = float(label)
         
         all_image_paths.append(os.path.abspath(file))
         all_image_labels.append(label)
@@ -70,12 +70,13 @@ def run(epochs=5):
     model.fit(train_set,
               epochs=int(epochs),
               steps_per_epoch=500,
-              validation_data=val_set)
+              validation_data=val_set,
+              validation_steps=100)
     
     model.save('model.h5')
 
     test_set = fetch_ds('data/test', batch_size=128)
-    results = model.evaluate(test_set)
+    results = model.evaluate(test_set, steps=100)
     print('Test loss, test acc:', results)
 
 if __name__ == "__main__":
