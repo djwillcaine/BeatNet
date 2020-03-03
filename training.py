@@ -26,7 +26,7 @@ def gen_model():
     return model
 
 
-def fetch_ds(dir_name='data/train', batch_size=128):
+def fetch_ds(dir_name='data/training', batch_size=128):
     all_image_paths = []
     all_image_labels = []
 
