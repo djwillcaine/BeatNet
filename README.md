@@ -28,16 +28,22 @@ See the [README](/datagen/) in the `datagen` directory for information on produc
     
 ## Training The Model
 
-To train the model, simply run the `training.py` script with training data present in a directory named specgrams.
+To train the model, simply run the training script with training and validation data in their respective `./data/training` and `./data/validation` directories.
 
-    $ python training.py <epochs>
+    $ python BeatNet.py train <epochs>
     
-This script takes an optional parameter of the number of epochs to perform. If left unspecified this defaults to 10.
+This script takes an optional parameter which is the number of epochs to perform. If left unspecified this defaults to 5.
+
+## Evaluating The Model
+
+To evaluate the quality of the model, run the test script with test data present in the `./data/test` directory.
+
+    $ python BeatNet.py test
 
 ## Using The Model
 
 Once you have a trained model you can use the `predict.py` script to predict the BPM of a particular spectrogram image file like so:
 
-    $ python predict.py <path_to_image.png>
+    $ python BeatNet.py predict <path_to_image.png>
 
 This should print the models output to the console.
