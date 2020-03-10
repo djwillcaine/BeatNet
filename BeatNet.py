@@ -1,4 +1,6 @@
 import tensorflow as tf
+from sklearn.manifold import TSNE
+from matplotlib import pyplot as plt
 import os
 import sys
 import pathlib
@@ -120,6 +122,27 @@ class BeatNet:
         print("Model saved to ", filename)
 
 
+def plot_tsne(beatnet):
+    images = beatnet.fetch_dataset('data/training')
+    images = images.take(1)
+
+    x = []
+    y = []
+
+    for batch in images.as_numpy_iterator():
+        batch_size = len(batch[1])
+        for i in range(batch_size):
+            x.append(tf.keras.backend.flatten(batch[0][i]))
+            y.append(batch[1][i])
+
+    x_2d = TSNE(n_components=2).fit_transform(x)
+
+    plt.figure()
+    for i in range(len(x_2d)):
+        plt.scatter(x_2d[i][0], x_2d[i][1], c=[1, (y[i] - 50) / 150, 0])
+    plt.show()
+
+
 if __name__ == "__main__":
     argv = sys.argv[1:]
 
@@ -137,3 +160,6 @@ if __name__ == "__main__":
         if argv[0] == "test":
             beatnet.load_model()
             beatnet.test()
+
+        if argv[0] == "tsne":
+            plot_tsne(beatnet)
