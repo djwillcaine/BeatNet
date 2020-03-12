@@ -122,25 +122,33 @@ class BeatNet:
         print("Model saved to ", filename)
 
 
-def plot_tsne(beatnet):
-    images = beatnet.fetch_dataset('data/training')
-    images = images.take(1)
+    def plot_tsne(self, dataset, layer):
+        # Produce a model that returns layer activations
+        layer_outputs = [layer.output for layer in self.model.layers]
+        activation_model = tf.keras.models.Model(inputs=self.model.input, outputs=layer_outputs)
 
-    x = []
-    y = []
+        images = []
+        labels = []
 
-    for batch in images.as_numpy_iterator():
-        batch_size = len(batch[1])
-        for i in range(batch_size):
-            x.append(tf.keras.backend.flatten(batch[0][i]))
-            y.append(batch[1][i])
+        # Extract activations at specified layer for each image
+        for batch in dataset.take(1).as_numpy_iterator():
+            for i in range(len(batch[1])):
+                image = tf.expand_dims(batch[0][i], 0)
+                activations = activation_model.predict(image)
+                images.append(tf.keras.backend.flatten(activations[layer]))
+            labels.extend(batch[1])
 
-    x_2d = TSNE(n_components=2).fit_transform(x)
+        # Apply TSNE
+        images_2d = TSNE(n_components=2, verbose=1).fit_transform(images)
+        x, y = zip(*images_2d)
 
-    plt.figure()
-    for i in range(len(x_2d)):
-        plt.scatter(x_2d[i][0], x_2d[i][1], c=[1, (y[i] - 50) / 150, 0])
-    plt.show()
+        # Set colour for each point based on BPM
+        c = [(bpm - 50) / 150 for bpm in y]
+
+        # Plot data
+        plt.figure()
+        plt.scatter(x, y, c=c)
+        plt.show()
 
 
 if __name__ == "__main__":
@@ -162,4 +170,6 @@ if __name__ == "__main__":
             beatnet.test()
 
         if argv[0] == "tsne":
-            plot_tsne(beatnet)
+            beatnet.load_model()
+            dataset = beatnet.fetch_dataset('data/training')
+            beatnet.plot_tsne(dataset, int(argv[1]))
