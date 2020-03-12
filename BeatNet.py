@@ -143,7 +143,7 @@ class BeatNet:
         x, y = zip(*images_2d)
 
         # Set colour for each point based on BPM
-        c = [(bpm - 50) / 150 for bpm in y]
+        c = [(bpm - 50) / 150 for bpm in labels]
 
         # Plot data
         plt.figure()
