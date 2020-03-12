@@ -172,4 +172,4 @@ if __name__ == "__main__":
         if argv[0] == "tsne":
             beatnet.load_model()
             dataset = beatnet.fetch_dataset('data/training')
-            beatnet.plot_tsne(dataset, 1)
+            beatnet.plot_tsne(dataset, int(argv[1]))
