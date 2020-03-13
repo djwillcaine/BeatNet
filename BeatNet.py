@@ -131,7 +131,8 @@ class BeatNet:
         labels = []
 
         # Extract activations at specified layer for each image
-        for batch in dataset.take(1).as_numpy_iterator():
+        # 5 batches = 2560 images - using more exhausted memory and crashed
+        for batch in dataset.take(5).as_numpy_iterator():
             for i in range(len(batch[1])):
                 image = tf.expand_dims(batch[0][i], 0)
                 activations = activation_model.predict(image)
@@ -140,6 +141,7 @@ class BeatNet:
 
         # Apply TSNE
         images_2d = TSNE(n_components=2, verbose=1).fit_transform(images)
+        images_2d = remove_outliers(images_2d)
         x, y = zip(*images_2d)
 
         # Set colour for each point based on BPM
@@ -148,7 +150,27 @@ class BeatNet:
         # Plot data
         plt.figure()
         plt.scatter(x, y, c=c)
-        plt.show()
+        plt.savefig('temp/Layer: %s.png' % self.model.layers[layer].name)
+        print("Done.")
+
+
+def remove_outliers(points):
+    mean_x = 0
+    mean_y = 0
+    for x, y in points:
+        mean_X += x
+        mean_y += y
+    mean_x /= len(points)
+    mean_y /= len(points)
+
+    for x, y in points:
+        if x / mean_x > 2 or x / mean_x < 0.5:
+            points.remove([x, y])
+        elif y / mean_y > 2 or y / mean_y < 0.5:
+            points.remove([x, y])
+
+    print("Found %d non-outliers" % len(points))
+    return points
 
 
 if __name__ == "__main__":
@@ -172,4 +194,6 @@ if __name__ == "__main__":
         if argv[0] == "tsne":
             beatnet.load_model()
             dataset = beatnet.fetch_dataset('data/training')
-            beatnet.plot_tsne(dataset, int(argv[1]))
+            for i in range(len(beatnet.model.layers)):
+                print("Plotting graph %d/%d" % (i, len(beatnet.model.layers)))
+                beatnet.plot_tsne(dataset, i)
