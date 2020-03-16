@@ -1,6 +1,7 @@
 import tensorflow as tf
 from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt
+import numpy as np
 import os
 import sys
 import pathlib
@@ -74,7 +75,7 @@ class BeatNet:
         image_ds = path_ds.map(self.img_to_tensor)
         label_ds = tf.data.Dataset.from_tensor_slices(image_labels)
         ds = tf.data.Dataset.zip((image_ds, label_ds))
-        ds = ds.shuffle(buffer_size=len(os.listdir(ds_dir)))
+        #ds = ds.shuffle(buffer_size=len(os.listdir(ds_dir)))
 
         if repeat:
             ds = ds.repeat()
@@ -154,20 +155,17 @@ class BeatNet:
         print("Done.")
 
 
-def remove_outliers(points):
-    mean_x = 0
-    mean_y = 0
-    for x, y in points:
-        mean_X += x
-        mean_y += y
-    mean_x /= len(points)
-    mean_y /= len(points)
 
-    for x, y in points:
-        if x / mean_x > 2 or x / mean_x < 0.5:
-            points.remove([x, y])
-        elif y / mean_y > 2 or y / mean_y < 0.5:
-            points.remove([x, y])
+def remove_outliers(points):
+    std = points.std(axis=0)
+    mean = points.mean(axis=0)
+    for i in range(len(points)):
+        if points[i][0] < mean[0] - std[0] * 5
+        or points[i][0] > mean[0] + std[0] * 5
+        or points[i][1] < mean[1] - std[1] * 5
+        or points[i][1] > mean[1] + std[1] * 5:
+            points = np.delete(points, i)
+        
 
     print("Found %d non-outliers" % len(points))
     return points
@@ -194,6 +192,7 @@ if __name__ == "__main__":
         if argv[0] == "tsne":
             beatnet.load_model()
             dataset = beatnet.fetch_dataset('data/training')
+            beatnet.plot_tsne(dataset, 0)
             for i in range(len(beatnet.model.layers)):
                 print("Plotting graph %d/%d" % (i, len(beatnet.model.layers)))
                 beatnet.plot_tsne(dataset, i)
