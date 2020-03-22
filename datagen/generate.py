@@ -76,6 +76,12 @@ def generate_random_specgram(track):
     plt.savefig(filename)
     plt.close()
 
+def choose_track(tracks):
+    track = np.random.choice(tracks)
+    if track.bpm < 120 or track.bpm > 130:
+        return choose_track(tracks)
+    return track
+
 def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
@@ -83,7 +89,7 @@ def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('Generating Spectrograms...')
     samples = []
     for i in range(n):
-        samples.append(np.random.choice(tracks))
+        samples.append(choose_track(tracks))
 
     pool = multiprocessing.Pool()
     for i, _ in enumerate(pool.imap_unordered(generate_random_specgram, samples)):
