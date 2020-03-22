@@ -1,7 +1,9 @@
 import tensorflow as tf
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
 import numpy as np
+import datetime
 import os
 import sys
 import pathlib
@@ -75,7 +77,7 @@ class BeatNet:
         image_ds = path_ds.map(self.img_to_tensor)
         label_ds = tf.data.Dataset.from_tensor_slices(image_labels)
         ds = tf.data.Dataset.zip((image_ds, label_ds))
-        #ds = ds.shuffle(buffer_size=len(os.listdir(ds_dir)))
+        # ds = ds.shuffle(buffer_size=len(os.listdir(ds_dir)))
 
         if repeat:
             ds = ds.repeat()
@@ -94,8 +96,16 @@ class BeatNet:
         training_data = self.fetch_dataset("data/training", repeat=True)
         validation_data = self.fetch_dataset("data/validation", batch_size=128)
 
+        # Configure TensorBoard
+        log_dir = "logs\\fit\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
         # Train model
-        self.model.fit(training_data, epochs=int(epochs), steps_per_epoch=512, validation_data=validation_data)
+        self.model.fit(training_data,
+                       epochs=int(epochs),
+                       steps_per_epoch=512,
+                       validation_data=validation_data,
+                       callbacks=[tensorboard_callback])
 
 
     def predict(self, filename):
@@ -140,8 +150,9 @@ class BeatNet:
                 images.append(tf.keras.backend.flatten(activations[layer]))
             labels.extend(batch[1])
 
-        # Apply TSNE
-        images_2d = TSNE(n_components=2, verbose=1).fit_transform(images)
+        # Apply PCA to 50 dims, then T-SNE to 2
+        images_50d = PCA(n_components=50).fit_transform(images)
+        images_2d = TSNE(n_components=2).fit_transform(images_50d)
         images_2d = remove_outliers(images_2d)
         x, y = zip(*images_2d)
 
@@ -160,10 +171,10 @@ def remove_outliers(points):
     std = points.std(axis=0)
     mean = points.mean(axis=0)
     for i in range(len(points)):
-        if points[i][0] < mean[0] - std[0] * 5
-        or points[i][0] > mean[0] + std[0] * 5
-        or points[i][1] < mean[1] - std[1] * 5
-        or points[i][1] > mean[1] + std[1] * 5:
+        if (points[i][0] < mean[0] - std[0] * 5
+         or points[i][0] > mean[0] + std[0] * 5
+         or points[i][1] < mean[1] - std[1] * 5
+         or points[i][1] > mean[1] + std[1] * 5):
             points = np.delete(points, i)
         
 
@@ -194,5 +205,5 @@ if __name__ == "__main__":
             dataset = beatnet.fetch_dataset('data/training')
             beatnet.plot_tsne(dataset, 0)
             for i in range(len(beatnet.model.layers)):
-                print("Plotting graph %d/%d" % (i, len(beatnet.model.layers)))
+                print("Plotting graph %d/%d" % (i + 1, len(beatnet.model.layers)))
                 beatnet.plot_tsne(dataset, i)

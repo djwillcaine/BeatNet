@@ -1,4 +1,5 @@
 .vscode/*
 data/*
 temp/*
+logs/*
 *.h5
