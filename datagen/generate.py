@@ -7,8 +7,6 @@ import lxml.etree as ET
 from urllib.parse import unquote
 import multiprocessing
 
-import warnings
-
 BPM_VARIATION_AMOUNT = 0.1
 BPM_VARIATION_PROB = 0.2
 FRAME_RATE = 22050
@@ -109,7 +107,6 @@ def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('\nDone.')
 
 if __name__ == "__main__":
-    warnings.simplefilter('error', UserWarning)
     multiprocessing.freeze_support()
     
     try:
