@@ -15,10 +15,12 @@ BUFFER = 5
 PROGRESS_BAR_SIZE = 50
 
 class Track:
-    def __init__(self, trackid, location, bpm):
+    def __init__(self, trackid, location, bpm, inizio, length):
         self.trackid = trackid
         self.location = os.path.abspath(unquote(location))
         self.bpm = bpm
+        self.inizio = inizio
+        self.length = length
     
 def load_tracks(lib_xml_file):
     tree = ET.parse(lib_xml_file)
@@ -35,12 +37,13 @@ def load_tracks(lib_xml_file):
             skipped += 1
             continue
         valid += 1
-            
-        tracks.append(Track(
-            trackid.get('Key'),
-            location,
-            float(track.find('TEMPO').get('Bpm'))
-            ))
+
+        bpm = float(track.find('TEMPO').get('Bpm'))
+        inizio = float(track.find('TEMPO').get('Inizio'))
+        length = int(track.get('TotalTime'))
+
+        tracks.append(Track(trackid.get('Key'), location, bpm, inizio, length))
+
     print("Found %d valid tracks (skipped %d)" % (valid, skipped))
     return tracks
 
@@ -61,9 +64,12 @@ def generate_random_specgram(track):
     audio = audio.set_channels(1).set_frame_rate(FRAME_RATE)
     samples = audio.get_array_of_samples()
     chunk_length = int(SAMPLE_LENGTH * frame_rate)
-    start = np.random.randint(
-        BUFFER * FRAME_RATE,
-        len(samples) - (BUFFER * FRAME_RATE) - chunk_length)
+
+    # Choose a random beat to start on
+    x = np.random.randint(
+        BUFFER * track.bpm / 60,
+        track.bpm * (track.length - BUFFER - SAMPLE_LENGTH) / 60)
+    start = FRAME_RATE * (track.inizio + 60 * x / track.bpm)
     chunk = samples[start:start + chunk_length]
 
     # Plot specgram and save to file
@@ -76,12 +82,6 @@ def generate_random_specgram(track):
     plt.savefig(filename)
     plt.close()
 
-def choose_track(tracks):
-    track = np.random.choice(tracks)
-    if track.bpm < 120 or track.bpm > 130:
-        return choose_track(tracks)
-    return track
-
 def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
@@ -89,7 +89,7 @@ def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('Generating Spectrograms...')
     samples = []
     for i in range(n):
-        samples.append(choose_track(tracks))
+        samples.append(np.random.choice(tracks))
 
     pool = multiprocessing.Pool()
     for i, _ in enumerate(pool.imap_unordered(generate_random_specgram, samples)):
