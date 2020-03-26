@@ -69,7 +69,7 @@ def generate_random_specgram(track):
     x = np.random.randint(
         BUFFER * track.bpm / 60,
         track.bpm * (track.length - BUFFER - SAMPLE_LENGTH) / 60)
-    start = FRAME_RATE * (track.inizio + 60 * x / track.bpm)
+    start = int(FRAME_RATE * (track.inizio + 60 * x / track.bpm))
     chunk = samples[start:start + chunk_length]
 
     # Plot specgram and save to file
