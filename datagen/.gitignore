@@ -1,6 +1,7 @@
 __pycache__/*
 build/*
 dist/*
+data/*
 *.spec
 *.xml
 *.exe
