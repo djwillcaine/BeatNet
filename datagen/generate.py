@@ -18,6 +18,7 @@ N_MELS = 40
 SAMPLE_LENGTH = 2
 BUFFER = 5
 PROGRESS_BAR_SIZE = 50
+AUGMENTATION_MULTIPLIERS = [0.8, 0.84, 0.88, 0.92, 0.96, 1.0, 1.04, 1.08, 1.12, 1.16, 1.2]
 
 
 class Track:
@@ -62,19 +63,34 @@ def load_tracks(lib_xml_file):
 
 
 def generate_random_specgram(track):
-    frame_rate = FRAME_RATE
-    part = np.random.choice(track.parts)
-    bpm = part['bpm']
-    
     # Perform random variations to the BPM (sometimes)
+    augmentation_multiplier = 1.0
     if np.random.random() < BPM_VARIATION_PROB:
-        bpm = np.random.randint(
-            max(70, bpm - (BPM_VARIATION_AMOUNT * bpm)),
-            min(198, bpm + (BPM_VARIATION_AMOUNT * bpm)))
-        frame_rate = int(frame_rate * (bpm / part['bpm']))
+        augmentation_multiplier = np.random.rand(
+            1 - BPM_VARIATION_AMOUNT, 1 + BPM_VARIATION_AMOUNT)
 
-    audio_file, _ = librosa.load(track.location, FRAME_RATE)
-    audio, _ = librosa.effects.trim(audio_file)
+    try:
+        audio_file, _ = librosa.load(track.location, FRAME_RATE)
+        audio, _ = librosa.effects.trim(audio_file)
+        plot_and_save_specgram(track, audio, augmentation_multiplier)
+    except:
+        print("\nFailed to produce image for: " + track.location)
+
+
+def generate_augmented_specgrams(track):
+    try:
+        audio_file, _ = librosa.load(track.location, FRAME_RATE)
+        audio, _ = librosa.effects.trim(audio_file)
+        for m in AUGMENTATION_MULTIPLIERS:
+            plot_and_save_specgram(track, audio, m)
+    except:
+        print("\nFailed to produce image for: " + track.location)
+
+
+def plot_and_save_specgram(track, audio, augmentation_multiplier=1.0):
+    part = np.random.choice(track.parts)
+    bpm = round(part['bpm'] * augmentation_multiplier)
+    frame_rate = int(FRAME_RATE * (bpm / part['bpm']))
     chunk_length = int(SAMPLE_LENGTH * frame_rate)
 
     # Choose a random chunk of chunk_length samples 
@@ -85,20 +101,22 @@ def generate_random_specgram(track):
     mel = librosa.feature.melspectrogram(chunk, sr=frame_rate, n_fft=2048, n_mels=N_MELS, fmin=20, fmax=5000)
     mel_DB = librosa.power_to_db(mel, ref=np.max)
 
-    # Plot specgram and save to file
-
+    # Configure plot
     plt.figure(figsize=(2.56, 0.4)).add_axes([0, 0, 1, 1])
     plt.axis('off')
     plt.xlim(0, SAMPLE_LENGTH)
     plt.ylim(0, frame_rate / 2)
     
+    # Plot specgram
     librosa.display.specshow(mel_DB, x_axis="time", y_axis="mel", fmin=20, fmax=5000)
     plt.set_cmap('gray')
 
+    # Save to file
     filename = ('data/%d/%s-%s.png' % (bpm, track.trackid, i))
     create_dir('data/%d' % bpm)
     plt.savefig(filename)
     plt.close()
+
 
 def generate_samples(lib_xml_file='lib.xml', n=1000):
     print('Loading library...')
@@ -111,7 +129,7 @@ def generate_samples(lib_xml_file='lib.xml', n=1000):
         samples.append(np.random.choice(tracks))
 
     pool = multiprocessing.Pool()
-    for i, _ in enumerate(pool.imap_unordered(generate_random_specgram, samples)):
+    for i, _ in enumerate(pool.imap_unordered(generate_augmented_specgrams, samples)):
         progress = (i + 1) / n
         print('\r[%s%s] %3.1f%%' % (
             '=' * int(PROGRESS_BAR_SIZE * progress),
