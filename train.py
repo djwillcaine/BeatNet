@@ -62,7 +62,7 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
     print(model.summary())
 
     # Callback to log data for TensorBoard
-    log_dir = "temp/logs/fit/" + model_name
+    log_dir = "temp\\logs\\fit\\" + model_name
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Callback to save best weights
