@@ -1,3 +1,0 @@
-lxml==4.4.2
-matplotlib==1.5.3
-pydub==0.23.1

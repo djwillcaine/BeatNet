@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 from pydub import AudioSegment
 import matplotlib.pyplot as plt
 import librosa
@@ -11,14 +12,18 @@ import multiprocessing
 import warnings
 warnings.simplefilter("ignore")
 
-BPM_VARIATION_AMOUNT = 0.1
-BPM_VARIATION_PROB = 0.5
-FRAME_RATE = 22050
-N_MELS = 40
-SAMPLE_LENGTH = 2
-BUFFER = 5
+FRAME_RATE = 22050  # Hz
+N_MELS = 40         # Mels
+SAMPLE_LENGTH = 10  # Seconds
+BUFFER = 5          # Seconds
 PROGRESS_BAR_SIZE = 50
-AUGMENTATION_MULTIPLIERS = [0.8, 0.84, 0.88, 0.92, 0.96, 1.0, 1.04, 1.08, 1.12, 1.16, 1.2]
+AUGMENTATION_MULTIPLIERS = [0.9, 0.92, 0.94, 0.96, 0.98, 1.0, 1.02, 1.04, 1.06, 1.08, 1.1]
+
+output_dir = 'data'
+validation_split = 0.2
+test_split = 0.1
+limits = [80, 180]
+linear = False
 
 
 class Track:
@@ -62,22 +67,7 @@ def load_tracks(lib_xml_file):
     return tracks
 
 
-def generate_random_specgram(track):
-    # Perform random variations to the BPM (sometimes)
-    augmentation_multiplier = 1.0
-    if np.random.random() < BPM_VARIATION_PROB:
-        augmentation_multiplier = np.random.rand(
-            1 - BPM_VARIATION_AMOUNT, 1 + BPM_VARIATION_AMOUNT)
-
-    try:
-        audio_file, _ = librosa.load(track.location, FRAME_RATE)
-        audio, _ = librosa.effects.trim(audio_file)
-        plot_and_save_specgram(track, audio, augmentation_multiplier)
-    except:
-        print("\nFailed to produce image for: " + track.location)
-
-
-def generate_augmented_specgrams(track):
+def generate_augmented_specgrams(track):   
     try:
         audio_file, _ = librosa.load(track.location, FRAME_RATE)
         audio, _ = librosa.effects.trim(audio_file)
@@ -90,6 +80,10 @@ def generate_augmented_specgrams(track):
 def plot_and_save_specgram(track, audio, augmentation_multiplier=1.0):
     part = np.random.choice(track.parts)
     bpm = round(part['bpm'] * augmentation_multiplier)
+
+    if bpm < limits[0] or bpm > limits[1]:
+        return
+
     frame_rate = int(FRAME_RATE * (bpm / part['bpm']))
     chunk_length = int(SAMPLE_LENGTH * frame_rate)
 
@@ -97,9 +91,12 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier=1.0):
     i = np.random.randint(part['start'] * FRAME_RATE, part['end'] * FRAME_RATE)
     chunk = audio[i:i + chunk_length]
 
-    # Convert to mel-scale
-    mel = librosa.feature.melspectrogram(chunk, sr=frame_rate, n_fft=2048, n_mels=N_MELS, fmin=20, fmax=5000)
-    mel_DB = librosa.power_to_db(mel, ref=np.max)
+    # Scale data linearly or by Mel-scale
+    if linear:
+        data = librosa.amplitude_to_db(np.abs(librosa.stft(chunk)), ref=np.max)
+    else:
+        mel = librosa.feature.melspectrogram(chunk, sr=frame_rate, n_fft=2048, n_mels=N_MELS, fmin=20, fmax=5000)
+        data = librosa.power_to_db(mel, ref=np.max)
 
     # Configure plot
     plt.figure(figsize=(2.56, 0.4)).add_axes([0, 0, 1, 1])
@@ -108,17 +105,24 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier=1.0):
     plt.ylim(0, frame_rate / 2)
     
     # Plot specgram
-    librosa.display.specshow(mel_DB, x_axis="time", y_axis="mel", fmin=20, fmax=5000)
-    plt.set_cmap('gray')
+    librosa.display.specshow(data, cmap='gray_r', x_axis="time", y_axis="log")
+
+    # Randomly distribute training/validation/test
+    sub_dir = 'training'
+    r = np.random.rand()
+    if r < validation_split:
+        sub_dir = 'validation'
+    elif r < validation_split + test_split:
+        sub_dir = 'test'
 
     # Save to file
-    filename = ('data/%d/%s-%s.png' % (bpm, track.trackid, i))
-    create_dir('data/%d' % bpm)
+    create_dir(output_dir + '/%s/%d' % (sub_dir, bpm))
+    filename = (output_dir + '/%s/%d/%s-%s.png' % (sub_dir, bpm, track.trackid, i))
     plt.savefig(filename)
     plt.close()
 
 
-def generate_samples(lib_xml_file='lib.xml', n=1000):
+def generate_data(lib_xml_file, n):
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
 
@@ -148,18 +152,23 @@ def create_dir(dir_name):
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    create_dir("data")
 
-    lib_path = ''
-    for file in os.listdir('./'):
-        if not file.endswith('.xml'): continue
-        lib_path = file
-    if not os.path.isfile(lib_path):
-        input("Library file not found, press any key to exit...")
-        sys.exit(0)
+    parser = argparse.ArgumentParser()
 
-    n = int(input("How many images would you like to generate? "))
-    generate_samples(lib_path, n)
+    parser.add_argument('lib_path', default='lib.xml')
+    parser.add_argument('-n', '--num-tracks', type=int, default=1000)
+    parser.add_argument('-o', '--output-dir', default='data')
+    parser.add_argument('-v', '--validation-split', type=float, default=0.2)
+    parser.add_argument('-t', '--test-split', type=float, default=0.2)
+    parser.add_argument('-r', '--range', default='80-180')
+    parser.add_argument('-l', '--linear', action='store_true')
+
+    args = parser.parse_args()
     
-    input("Finished. Press any key to close...")
-    sys.exit(0)
+    output_dir = args.output_dir
+    validation_split = args.validation_split
+    test_split = args.test_split
+    limits = [int(i) for i in args.range.split('-')]
+    linear = args.linear
+
+    generate_data(args.lib_path, args.num_tracks)
