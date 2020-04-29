@@ -21,7 +21,7 @@ for dataset in pathlib.Path(data_dir).iterdir():
 
 print('Evaluating models...')
 for model_path in pathlib.Path(models_dir).iterdir():
-    if model_path.stem.split('.')[-2] == 'best':
-        subprocess.run(['python', 'evaluate.py', model_path, '-w'])
+    if model_path.stem.split('.')[-1] == 'best':
+        subprocess.run(['python', 'evaluate.py', str(model_path), '-w'])
 
 print('Done.')

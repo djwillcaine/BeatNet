@@ -111,4 +111,4 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--data-dir')
 
     args = parser.parse_args()
-    evaluate(args.model_path, args.w, args.data_dir)
+    evaluate(args.model_path, args.write_to_file, args.data_dir)
