@@ -9,6 +9,7 @@ import numpy as np
 import lxml.etree as ET
 from urllib.parse import unquote
 import multiprocessing
+from functools import partial
 import warnings
 warnings.simplefilter("ignore")
 
@@ -67,17 +68,17 @@ def load_tracks(lib_xml_file):
     return tracks
 
 
-def generate_augmented_specgrams(track):   
+def generate_augmented_specgrams(output_dir, validation_split, test_split, limits, linear, track): 
     try:
         audio_file, _ = librosa.load(track.location, FRAME_RATE)
         audio, _ = librosa.effects.trim(audio_file)
         for m in AUGMENTATION_MULTIPLIERS:
-            plot_and_save_specgram(track, audio, m)
+            plot_and_save_specgram(track, audio, m, output_dir, validation_split, test_split, limits, linear)
     except:
         print("\nFailed to produce image for: " + track.location)
 
 
-def plot_and_save_specgram(track, audio, augmentation_multiplier=1.0):
+def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, validation_split, test_split, limits, linear):
     part = np.random.choice(track.parts)
     bpm = round(part['bpm'] * augmentation_multiplier)
 
@@ -122,7 +123,7 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier=1.0):
     plt.close()
 
 
-def generate_data(lib_xml_file, n):
+def generate_data(lib_xml_file, n, output_dir, validation_split, test_split, limits, linear):
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
 
@@ -132,8 +133,9 @@ def generate_data(lib_xml_file, n):
     for i in range(n):
         samples.append(np.random.choice(tracks))
 
+    func = partial(generate_augmented_specgrams, output_dir, validation_split, test_split, limits, linear)
     pool = multiprocessing.Pool()
-    for i, _ in enumerate(pool.imap_unordered(generate_augmented_specgrams, samples)):
+    for i, _ in enumerate(pool.imap_unordered(func, samples)):
         progress = (i + 1) / n
         print('\r[%s%s] %3.1f%%' % (
             '=' * int(PROGRESS_BAR_SIZE * progress),
@@ -155,20 +157,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('lib_path', default='lib.xml')
+    parser.add_argument('-p', '--lib_path', default='lib.xml')
     parser.add_argument('-n', '--num-tracks', type=int, default=1000)
     parser.add_argument('-o', '--output-dir', default='data')
     parser.add_argument('-v', '--validation-split', type=float, default=0.2)
-    parser.add_argument('-t', '--test-split', type=float, default=0.2)
+    parser.add_argument('-t', '--test-split', type=float, default=0.1)
     parser.add_argument('-r', '--range', default='80-180')
     parser.add_argument('-l', '--linear', action='store_true')
 
     args = parser.parse_args()
-    
-    output_dir = args.output_dir
-    validation_split = args.validation_split
-    test_split = args.test_split
-    limits = [int(i) for i in args.range.split('-')]
-    linear = args.linear
 
-    generate_data(args.lib_path, args.num_tracks)
+    generate_data(
+        args.lib_path,
+        args.num_tracks,
+        args.output_dir,
+        args.validation_split,
+        args.test_split,
+        [int(i) for i in args.range.split('-')],
+        args.linear)
