@@ -1,17 +1,18 @@
 import os
 import sys
 import argparse
-from pydub import AudioSegment
+import multiprocessing
+import warnings
+
+import numpy as np
 import matplotlib.pyplot as plt
+import lxml.etree as ET
 import librosa
 import librosa.display
-import numpy as np
-import lxml.etree as ET
+
 from urllib.parse import unquote
-import multiprocessing
 from functools import partial
-import warnings
-warnings.simplefilter("ignore")
+
 
 FRAME_RATE = 22050  # Hz
 N_MELS = 40         # Mels
@@ -19,19 +20,6 @@ SAMPLE_LENGTH = 10  # Seconds
 BUFFER = 5          # Seconds
 PROGRESS_BAR_SIZE = 50
 AUGMENTATION_MULTIPLIERS = [0.9, 0.92, 0.94, 0.96, 0.98, 1.0, 1.02, 1.04, 1.06, 1.08, 1.1]
-
-output_dir = 'data'
-validation_split = 0.2
-test_split = 0.1
-limits = [80, 180]
-linear = False
-
-
-class Track:
-    def __init__(self, trackid, location, parts):
-        self.trackid = trackid
-        self.location = os.path.abspath(unquote(location))
-        self.parts = parts
     
 
 def load_tracks(lib_xml_file):
@@ -41,11 +29,11 @@ def load_tracks(lib_xml_file):
 
     valid = 0
     
-    for trackid in root.find('PLAYLISTS').find('NODE').find('NODE[@Name="BEATNET"]').iter('TRACK'):
-        track = root.find('COLLECTION').find('TRACK[@TrackID="' + trackid.get('Key') + '"]')
+    for pl_node in root.find('PLAYLISTS').find('NODE').find('NODE[@Name="BEATNET"]').iter('TRACK'):
+        track_node = root.find('COLLECTION').find('TRACK[@TrackID="' + pl_node.get('Key') + '"]')
 
-        location = unquote(track.get('Location')).replace('file://localhost/', '')
-        tempo_nodes = track.findall('TEMPO')
+        path = unquote(track_node.get('Location')).replace('file://localhost/', '')
+        tempo_nodes = track_node.findall('TEMPO')
         parts = []
 
         for i in range(len(tempo_nodes)):
@@ -56,12 +44,12 @@ def load_tracks(lib_xml_file):
             if i + 1 < len(tempo_nodes):
                 end = float(tempo_nodes[i + 1].get('Inizio')) - SAMPLE_LENGTH
             else:
-                end = int(track.get('TotalTime')) - BUFFER - SAMPLE_LENGTH
+                end = int(track_node.get('TotalTime')) - BUFFER - SAMPLE_LENGTH
             if int(end) > int(start):
                 parts.append({'bpm': bpm, 'start': start, 'end': end})
 
         if len(parts) > 0:
-            tracks.append(Track(trackid.get('Key'), location, parts))
+            tracks.append({'id': pl_node.get('Key'), 'path': path, 'parts': parts})
             valid += 1
 
     print("Found %d valid tracks" % valid)
@@ -70,16 +58,16 @@ def load_tracks(lib_xml_file):
 
 def generate_augmented_specgrams(output_dir, validation_split, test_split, limits, linear, track): 
     try:
-        audio_file, _ = librosa.load(track.location, FRAME_RATE)
+        audio_file, _ = librosa.load(track['path'], FRAME_RATE)
         audio, _ = librosa.effects.trim(audio_file)
         for m in AUGMENTATION_MULTIPLIERS:
             plot_and_save_specgram(track, audio, m, output_dir, validation_split, test_split, limits, linear)
     except:
-        print("\nFailed to produce image for: " + track.location)
+        print("\nFailed to produce image for: " + track['path'])
 
 
 def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, validation_split, test_split, limits, linear):
-    part = np.random.choice(track.parts)
+    part = np.random.choice(track['parts'])
     bpm = round(part['bpm'] * augmentation_multiplier)
 
     if bpm < limits[0] or bpm > limits[1]:
@@ -118,7 +106,7 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, va
 
     # Save to file
     create_dir(output_dir + '/%s/%d' % (sub_dir, bpm))
-    filename = (output_dir + '/%s/%d/%s-%s.png' % (sub_dir, bpm, track.trackid, i))
+    filename = (output_dir + '/%s/%d/%s-%s.png' % (sub_dir, bpm, track['id'], i))
     plt.savefig(filename)
     plt.close()
 
@@ -153,7 +141,10 @@ def create_dir(dir_name):
         pass
 
 if __name__ == "__main__":
+    # Needed for multiprocessing when compiling to exe
     multiprocessing.freeze_support()
+    # Prevent librosa warnings caused by mp3s
+    warnings.simplefilter("ignore") 
 
     parser = argparse.ArgumentParser()
 
