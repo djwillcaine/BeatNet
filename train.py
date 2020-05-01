@@ -34,12 +34,12 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
             max(classes))
 
     # Load datasets
-    categorical = output_mode == 'classification'
-    train_data = fetch_dataset(train_dir, batch_size, categorical, repeat=True)
-    validation_data = fetch_dataset(validation_dir, batch_size, categorical)
+    is_categorical = output_mode == 'classification'
+    train_data = fetch_dataset(train_dir, batch_size, is_categorical, repeat=True)
+    validation_data = fetch_dataset(validation_dir, batch_size, is_categorical)
 
     # Configure output layer
-    if categorical:
+    if is_categorical:
         output_layer = Dense(n_classes, activation='softmax', name='Output')
     else:
         output_layer = Dense(1, activation='relu', name='Output')
@@ -55,7 +55,7 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
         return
 
     # Compile model
-    if categorical:
+    if is_categorical:
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     else:
         model.compile(optimizer='adam', loss='mse', metrics=['mae'])
@@ -66,8 +66,8 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Callback to save best weights
-    checkpoint = ModelCheckpoint('models/' + model_name + '.best.h5', monitor='loss',
-        verbose=1, save_best_only=True, mode='auto', period=1)
+    checkpoint = ModelCheckpoint(
+        'models/%s.{epoch:02d}.best.h5' % model_name, verbose=1, save_best_only=True)
 
     # Train model
     history = model.fit(
@@ -82,36 +82,7 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
     model.save('models/' + model_name + '.final.h5')
 
     # Plot graphs
-    # Taken and modified from: https://www.tensorflow.org/tutorials/images/classification
-    if categorical:
-        acc = history.history['accuracy']
-        val_acc = history.history['val_accuracy']
-        acc_label = 'Accuracy'
-        acc_loc = 'lower right'
-    else:
-        acc = history.history['mae']
-        val_acc = history.history['val_mae']
-        acc_label = 'MAE'
-        acc_loc = 'upper right'
-
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-
-    epochs_range = range(epochs)
-
-    plt.figure(figsize=(8, 8))
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Training ' + acc_label)
-    plt.plot(epochs_range, val_acc, label='Validation ' + acc_label)
-    plt.legend(loc=acc_loc)
-    plt.title('Training and Validation ' + acc_label)
-
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, loss, label='Training Loss')
-    plt.plot(epochs_range, val_loss, label='Validation Loss')
-    plt.legend(loc='upper right')
-    plt.title('Training and Validation Loss')
-    plt.savefig('graphs/' + model_name + '.png')
+    plot_graph(model_name, history, epochs, is_categorical)
 
 
 def img_to_tensor(img_path):
@@ -122,7 +93,7 @@ def img_to_tensor(img_path):
     return image
 
 
-def fetch_dataset(ds_dir, batch_size, categorical, repeat=False):
+def fetch_dataset(ds_dir, batch_size, is_categorical, repeat=False):
     if not os.path.isdir(ds_dir):
         print("Dataset directory '%s' not found" % ds_dir)
         return
@@ -141,8 +112,8 @@ def fetch_dataset(ds_dir, batch_size, categorical, repeat=False):
             image_paths.append(os.path.abspath(str(file)))
             image_labels.append(label)
 
-    # One hot encode labels if categorical
-    if categorical:
+    # Encode labels if in categorical mode
+    if is_categorical:
         m = min(image_labels)
         image_labels = [i - m for i in image_labels]
         image_labels = tf.keras.utils.to_categorical(image_labels)
@@ -212,7 +183,7 @@ def build_deep_model(output_layer, model_name):
     # Dense layers
     x = BatchNormalization(name='BN4')(x)
     x = Dropout(0.5, name='DO')(x)
-    x = GlobalAveragePooling2D(name='GlobalAvgPool')(x)
+    x = Flatten(name='Flat')(x)
     x = Dense(64, activation='relu', name='FC1')(x)
     x = BatchNormalization(name='BN5')(x)
     x = Dense(64, activation='relu', name='FC2')(x)
@@ -221,6 +192,46 @@ def build_deep_model(output_layer, model_name):
 
     return Model(inputs=inputs, outputs=x, name=model_name)
 
+def plot_graph(model_name, history, epochs, is_categorical):
+    # Taken and modified from: https://www.tensorflow.org/tutorials/images/classification
+    if is_categorical:
+        acc = history.history['accuracy']
+        val_acc = history.history['val_accuracy']
+        acc_label = 'Accuracy'
+        acc_loc = 'lower right'
+    else:
+        acc = history.history['mae']
+        val_acc = history.history['val_mae']
+        acc_label = 'MAE'
+        acc_loc = 'upper right'
+
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs_range = range(epochs)
+
+    plt.figure(figsize=(8, 8))
+    plt.title(model_name)
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Training ' + acc_label)
+    plt.plot(epochs_range, val_acc, label='Validation ' + acc_label)
+    plt.legend(loc=acc_loc)
+    plt.title('Training and Validation ' + acc_label)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Training Loss')
+    plt.plot(epochs_range, val_loss, label='Validation Loss')
+    plt.legend(loc='upper right')
+    plt.title('Training and Validation Loss')
+    plt.savefig('graphs/' + model_name + '.png')
+
+
+def create_dir(dir_name):
+    try:
+        os.makedirs(dir_name)
+    except FileExistsError:
+        # directory already exists
+        pass
     
 
 if __name__ == "__main__":
@@ -228,13 +239,16 @@ if __name__ == "__main__":
 
     parser.add_argument('-b', '--batch-size', type=int, default=64)
     parser.add_argument('-s', '--steps-per-epoch', type=int, default=100)
-    parser.add_argument('-e', '--epochs', type=int, default=10)
+    parser.add_argument('-e', '--epochs', type=int, default=15)
     parser.add_argument('-d', '--data-dir', default='data')
     parser.add_argument('-n', '--model-name')
     parser.add_argument('-o', '--output-mode', choices=['classification', 'regression'], default='classification')
     parser.add_argument('-a', '--architecture', choices=['deep', 'shallow'], default='shallow')
 
     args = parser.parse_args()
+
+    create_dir('models')
+    create_dir('graphs')
 
     train_model(
         args.batch_size,

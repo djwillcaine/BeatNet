@@ -47,12 +47,11 @@ def evaluate(model_path, write_to_file, ds_dir):
     # Output results to file/console
     if write_to_file:
         file = open('results.csv', 'a')
-        file.write('%s,%s,%s,%s,%s,%f,%f,%f,%f\n' % (
+        file.write('%s,%s,%s,%s,%f,%f,%f,%f\n' % (
             model_info[0],
             model_info[1].capitalize(),
             model_info[2].capitalize(),
             model_info[3].capitalize(),
-            model_info[4],
             mse.numpy(),
             mae.numpy(),
             accuracy.numpy(),
