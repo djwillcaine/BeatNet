@@ -1,6 +1,7 @@
 .vscode/*
 data/*
-models/*
-graphs/*
+models*
+graphs*
 temp/*
+results*
 *.exe

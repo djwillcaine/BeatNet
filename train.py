@@ -210,18 +210,22 @@ def plot_graph(model_name, history, epochs, is_categorical):
     epochs_range = range(epochs)
 
     plt.figure(figsize=(8, 8))
-    plt.title(model_name)
+    plt.suptitle(model_name)
+
     plt.subplot(1, 2, 1)
+    plt.xlabel('Epochs')
     plt.plot(epochs_range, acc, label='Training ' + acc_label)
     plt.plot(epochs_range, val_acc, label='Validation ' + acc_label)
     plt.legend(loc=acc_loc)
     plt.title('Training and Validation ' + acc_label)
 
     plt.subplot(1, 2, 2)
+    plt.xlabel('Epochs')
     plt.plot(epochs_range, loss, label='Training Loss')
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
+
     plt.savefig('graphs/' + model_name + '.png')
 
 
