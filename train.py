@@ -66,8 +66,7 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
     tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Callback to save best weights
-    checkpoint = ModelCheckpoint(
-        'models/%s.{epoch:02d}.best.h5' % model_name, verbose=1, save_best_only=True)
+    checkpoint = ModelCheckpoint('models/%s.best.h5' % model_name, verbose=1, save_best_only=True)
 
     # Train model
     history = model.fit(
