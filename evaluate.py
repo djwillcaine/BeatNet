@@ -56,6 +56,7 @@ def evaluate(model_path, write_to_file, ds_dir):
             mae.numpy(),
             accuracy.numpy(),
             cce.numpy()))
+        file.close()
     else:
         print('MSE: ', mse.numpy())
         print('MAE: ', mae.numpy())
