@@ -28,7 +28,7 @@ def estimate(model_path, image_path, track_path, sample_length):
         plt.axis('off')
         plt.xlim(0, sample_length)
         plt.ylim(0, SAMPLE_RATE / 2)
-        librosa.display.specshow(data, cmap='gray_r', x_axis="time", y_axis="log")
+        librosa.display.specshow(data, cmap='gray_r', x_axis="time", y_axis="mel")
 
         # Save to temp file
         create_dir('temp')

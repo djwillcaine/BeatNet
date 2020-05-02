@@ -83,9 +83,11 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, va
     # Scale data linearly or by Mel-scale
     if linear:
         data = librosa.amplitude_to_db(np.abs(librosa.stft(chunk)), ref=np.max)
+        y_axis = 'log'
     else:
         mel = librosa.feature.melspectrogram(chunk, sr=frame_rate, n_fft=2048, n_mels=N_MELS, fmin=20, fmax=5000)
         data = librosa.power_to_db(mel, ref=np.max)
+        y_axis='mel'
 
     # Configure plot
     plt.figure(figsize=(2.56, 0.4)).add_axes([0, 0, 1, 1])
@@ -94,7 +96,7 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, va
     plt.ylim(0, frame_rate / 2)
     
     # Plot specgram
-    librosa.display.specshow(data, cmap='gray_r', x_axis="time", y_axis="log")
+    librosa.display.specshow(data, cmap='gray_r', x_axis="time", y_axis=y_axis)
 
     # Randomly distribute training/validation/test
     sub_dir = 'training'
