@@ -13,6 +13,8 @@ import librosa.display
 from urllib.parse import unquote
 from functools import partial
 
+# Prevent librosa warnings caused by mp3s
+warnings.simplefilter("ignore") 
 
 FRAME_RATE = 22050  # Hz
 N_MELS = 40         # Mels
@@ -145,8 +147,6 @@ def create_dir(dir_name):
 if __name__ == "__main__":
     # Needed for multiprocessing when compiling to exe
     multiprocessing.freeze_support()
-    # Prevent librosa warnings caused by mp3s
-    warnings.simplefilter("ignore") 
 
     parser = argparse.ArgumentParser()
 
