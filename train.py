@@ -3,7 +3,7 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, AveragePooling2D, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.layers import Flatten, BatchNormalization, Concatenate, Input, Activation
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 
 import os
 import datetime
@@ -42,7 +42,7 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
     if is_categorical:
         output_layer = Dense(n_classes, activation='softmax', name='Output')
     else:
-        output_layer = Dense(1, activation='relu', name='Output')
+        output_layer = Dense(1, activation='elu', name='Output')
 
     # Configure model architecture
     if depth == 'deep':
@@ -63,10 +63,13 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
 
     # Callback to log data for TensorBoard
     log_dir = "temp\\logs\\fit\\" + model_name
-    tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Callback to save best weights
     checkpoint = ModelCheckpoint('models/%s.best.h5' % model_name, verbose=1, save_best_only=True)
+
+    # Callback for early stopping
+    early_stop = EarlyStopping(monitor='val_loss', patience=3)
 
     # Train model
     history = model.fit(
@@ -74,14 +77,14 @@ def train_model(batch_size, steps_per_epoch, epochs, data_dir, model_name, outpu
         steps_per_epoch=steps_per_epoch,
         epochs=epochs,
         validation_data=validation_data,
-        callbacks=[tensorboard_callback, checkpoint]
+        callbacks=[tensorboard, checkpoint, early_stop]
     )
 
     # Save final model
     model.save('models/' + model_name + '.final.h5')
 
     # Plot graphs
-    plot_graph(model_name, history, epochs, is_categorical)
+    plot_graph(model_name, history, is_categorical)
 
 
 def img_to_tensor(img_path):
@@ -135,21 +138,21 @@ def fetch_dataset(ds_dir, batch_size, is_categorical, repeat=False):
 def build_shallow_model(output_layer, model_name):
     return Sequential([
         # Short filters
-        Conv2D(16, (5, 1), padding='same', activation='relu', name='Conv1.1', input_shape=(IMG_WIDTH, IMG_HEIGHT, 1)),
-        Conv2D(16, (5, 1), padding='same', activation='relu', name='Conv1.2'),
+        Conv2D(16, (5, 1), padding='same', activation='elu', name='Conv1.1', input_shape=(IMG_WIDTH, IMG_HEIGHT, 1)),
+        Conv2D(16, (5, 1), padding='same', activation='elu', name='Conv1.2'),
         BatchNormalization(name='BN1'),
         AveragePooling2D(pool_size=(1, IMG_HEIGHT), name='AvgPool'),
         
         # Long filters
-        Conv2D(16, (IMG_WIDTH, 1), padding='same', activation='relu', name='Conv2.1'),
-        Conv2D(16, (IMG_WIDTH, 1), padding='same', activation='relu', name='Conv2.2'),
+        Conv2D(16, (IMG_WIDTH, 1), padding='same', activation='elu', name='Conv2.1'),
+        Conv2D(16, (IMG_WIDTH, 1), padding='same', activation='elu', name='Conv2.2'),
         BatchNormalization(name='BN2'),
 
-        Conv2D(32, (1, 1), padding='same', activation='relu', name='1x1'),
+        Conv2D(32, (1, 1), padding='same', activation='elu', name='1x1'),
 
         # Dense layers
         GlobalAveragePooling2D(name='GlobalAvgPool'),
-        Dense(64, activation='relu', name='FC'),
+        Dense(64, activation='elu', name='FC'),
         BatchNormalization(name='BN4'),
         output_layer
     ], name=model_name)
@@ -160,11 +163,11 @@ def build_deep_model(output_layer, model_name):
 
     # Short filters
     x = BatchNormalization(name='BN1')(inputs)
-    x = Conv2D(16, (5, 1), padding='same', activation='relu', name='Conv1')(x)
+    x = Conv2D(16, (5, 1), padding='same', activation='elu', name='Conv1')(x)
     x = BatchNormalization(name='BN2')(x)
-    x = Conv2D(16, (5, 1), padding='same', activation='relu', name='Conv2')(x)
+    x = Conv2D(16, (5, 1), padding='same', activation='elu', name='Conv2')(x)
     x = BatchNormalization(name='BN3')(x)
-    x = Conv2D(16, (5, 1), padding='same', activation='relu', name='Conv3')(x)
+    x = Conv2D(16, (5, 1), padding='same', activation='elu', name='Conv3')(x)
 
     # Multi-filter modules
     pools = [(1, 5), (1, 2), (1, 2), (1, 2)]
@@ -183,15 +186,15 @@ def build_deep_model(output_layer, model_name):
     x = BatchNormalization(name='BN4')(x)
     x = Dropout(0.5, name='DO')(x)
     x = Flatten(name='Flat')(x)
-    x = Dense(64, activation='relu', name='FC1')(x)
+    x = Dense(64, activation='elu', name='FC1')(x)
     x = BatchNormalization(name='BN5')(x)
-    x = Dense(64, activation='relu', name='FC2')(x)
+    x = Dense(64, activation='elu', name='FC2')(x)
     x = BatchNormalization(name='BN6')(x)
     x = output_layer(x)
 
     return Model(inputs=inputs, outputs=x, name=model_name)
 
-def plot_graph(model_name, history, epochs, is_categorical):
+def plot_graph(model_name, history, is_categorical):
     # Taken and modified from: https://www.tensorflow.org/tutorials/images/classification
     if is_categorical:
         acc = history.history['accuracy']
@@ -207,22 +210,20 @@ def plot_graph(model_name, history, epochs, is_categorical):
     loss = history.history['loss']
     val_loss = history.history['val_loss']
 
-    epochs_range = range(epochs)
-
     plt.figure(figsize=(8, 8))
     plt.suptitle(model_name)
 
     plt.subplot(1, 2, 1)
     plt.xlabel('Epochs')
-    plt.plot(epochs_range, acc, label='Training ' + acc_label)
-    plt.plot(epochs_range, val_acc, label='Validation ' + acc_label)
+    plt.plot(acc, label='Training ' + acc_label)
+    plt.plot(val_acc, label='Validation ' + acc_label)
     plt.legend(loc=acc_loc)
     plt.title('Training and Validation ' + acc_label)
 
     plt.subplot(1, 2, 2)
     plt.xlabel('Epochs')
-    plt.plot(epochs_range, loss, label='Training Loss')
-    plt.plot(epochs_range, val_loss, label='Validation Loss')
+    plt.plot(loss, label='Training Loss')
+    plt.plot(val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
 
@@ -240,9 +241,9 @@ def create_dir(dir_name):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-b', '--batch-size', type=int, default=64)
+    parser.add_argument('-b', '--batch-size', type=int, default=128)
     parser.add_argument('-s', '--steps-per-epoch', type=int, default=100)
-    parser.add_argument('-e', '--epochs', type=int, default=15)
+    parser.add_argument('-e', '--epochs', type=int, default=100)
     parser.add_argument('-d', '--data-dir', default='data')
     parser.add_argument('-n', '--model-name')
     parser.add_argument('-o', '--output-mode', choices=['classification', 'regression'], default='classification')
