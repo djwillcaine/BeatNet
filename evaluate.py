@@ -43,9 +43,12 @@ def evaluate(model_path, write_to_file, ds_dir):
     for t_val, val in zip(true_values, pred_values):
         if t_val * 0.96 <= val and t_val * 1.04 >= val:
             acc1 += 1
-        for f in factors:
-            if t_val * 0.96 * f <= val and t_val * 1.04 * 4 >= val:
-                acc2 += 1
+            acc2 += 1
+        else:
+            for f in factors:
+                if t_val * 0.96 <= val * f and t_val * 1.04 >= val * f:
+                    acc2 += 1
+                    continue
     acc1 /= total
     acc2 /= total
 
@@ -65,8 +68,8 @@ def evaluate(model_path, write_to_file, ds_dir):
     else:
         print('MSE: ', mse.numpy())
         print('MAE: ', mae.numpy())
-        print('CCE: ', acc1)
-        print('Accuracy: ', acc2)
+        print('Accuracy1: ', acc1)
+        print('Accuracy2: ', acc2)
 
 
 def img_to_tensor(img_path):
