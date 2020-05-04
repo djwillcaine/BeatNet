@@ -22,27 +22,32 @@ def evaluate(model_path, write_to_file, ds_dir):
         ds_dir = os.path.join('data', model_info[0], 'test')
 
     # Fetch test dataset and predict results
-    x, true_bpms, true_cats = fetch_dataset(ds_dir, limits)
+    x, true_values = fetch_dataset(ds_dir, limits)
     results = model.predict(x)
 
     # Format results
     if categorical:
-        pred_cats = results
-        pred_bpms = tf.math.argmax(results, axis=1)
-        pred_bpms = [int(b + limits[0]) for b in pred_bpms]
+        pred_values = tf.math.argmax(results, axis=1)
+        pred_values = [int(b + limits[0]) for b in pred_values]
     else:
-        pred_bpms = np.around(tf.squeeze(results).numpy())
-        indexes = [int(b - limits[0]) for b in pred_bpms]
-        pred_cats = tf.one_hot(indexes, limits[1] - limits[0] + 1)
+        pred_values = tf.squeeze(results).numpy()
 
-    # Calculate metrics
-    mse = tf.keras.losses.MSE(true_bpms, pred_bpms)
-    mae = tf.keras.losses.MAE(true_bpms, pred_bpms)
-    cce = tf.keras.losses.CategoricalCrossentropy()(true_cats, pred_cats)
-
-    accuracy = tf.keras.metrics.Accuracy()
-    accuracy.update_state(true_bpms, pred_bpms)
-    accuracy = accuracy.result()
+    # Calculate MSE and MAE
+    mse = tf.keras.losses.MSE(true_values, pred_values)
+    mae = tf.keras.losses.MAE(true_values, pred_values)
+    
+    # Calculate accuracy1 and accuracy2
+    total = len(pred_values)
+    acc1 = acc2 = 0
+    factors = (1/3, 1/2, 2, 3)
+    for t_val, val in zip(true_values, pred_values):
+        if t_val * 0.96 <= val and t_val * 1.04 >= val:
+            acc1 += 1
+        for f in factors:
+            if t_val * 0.96 * f <= val and t_val * 1.04 * 4 >= val:
+                acc2 += 1
+    acc1 /= total
+    acc2 /= total
 
     # Output results to file/console
     if write_to_file:
@@ -54,14 +59,14 @@ def evaluate(model_path, write_to_file, ds_dir):
             model_info[3].capitalize(),
             mse.numpy(),
             mae.numpy(),
-            accuracy.numpy(),
-            cce.numpy()))
+            acc1,
+            acc2))
         file.close()
     else:
         print('MSE: ', mse.numpy())
         print('MAE: ', mae.numpy())
-        print('CCE: ', cce.numpy())
-        print('Accuracy: ', accuracy.numpy())
+        print('CCE: ', acc1)
+        print('Accuracy: ', acc2)
 
 
 def img_to_tensor(img_path):
@@ -91,16 +96,11 @@ def fetch_dataset(ds_dir, limits=(80, 180)):
             image_paths.append(os.path.abspath(str(file)))
             image_bpms.append(label)
 
-
-    n_classes = limits[1] - limits[0] + 1
-    indexes = [b - limits[0] for b in image_bpms]
-    categorical = tf.keras.utils.to_categorical(indexes, n_classes)
-
-    # Build dataset from paths/labels
+    # Build image dataset from paths
     path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
     image_ds = path_ds.map(img_to_tensor)
 
-    return image_ds, image_bpms, categorical
+    return image_ds, image_bpms
 
 
 if __name__ == "__main__":
