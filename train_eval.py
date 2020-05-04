@@ -21,7 +21,7 @@ for dataset in pathlib.Path(data_dir).iterdir():
 
 print('Evaluating models...')
 if not os.path.isfile('results.csv'):
-    file = open('results.csv')
+    file = open('results.csv', 'w')
     file.write('Dataset,Model Architecture,Model Type,BPM Range,MSE,MAE,Accuracy1,Accuracy2\n')
     file.close()
     
