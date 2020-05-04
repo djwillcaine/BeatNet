@@ -197,34 +197,34 @@ def build_deep_model(output_layer, model_name):
 def plot_graph(model_name, history, is_categorical):
     # Taken and modified from: https://www.tensorflow.org/tutorials/images/classification
     if is_categorical:
-        acc = history.history['accuracy']
-        val_acc = history.history['val_accuracy']
-        acc_label = 'Accuracy'
-        acc_loc = 'lower right'
+        metric = history.history['accuracy']
+        val_metric = history.history['val_accuracy']
+        metric_label = 'Accuracy'
     else:
-        acc = history.history['mae']
-        val_acc = history.history['val_mae']
-        acc_label = 'MAE'
-        acc_loc = 'upper right'
+        metric = history.history['mae']
+        val_metric = history.history['val_mae']
+        metric_label = 'MAE'
 
     loss = history.history['loss']
     val_loss = history.history['val_loss']
 
-    plt.figure(figsize=(8, 8))
+    epochs_range = [i + 1 for i in range(len(loss))]
+
+    plt.figure(figsize=(8, 4))
     plt.suptitle(model_name)
 
     plt.subplot(1, 2, 1)
     plt.xlabel('Epochs')
-    plt.plot(acc, label='Training ' + acc_label)
-    plt.plot(val_acc, label='Validation ' + acc_label)
-    plt.legend(loc=acc_loc)
-    plt.title('Training and Validation ' + acc_label)
+    plt.plot(epochs_range, metric, label='Training ' + metric_label)
+    plt.plot(epochs_range, val_metric, label='Validation ' + metric_label)
+    plt.legend()
+    plt.title('Training and Validation ' + metric_label)
 
     plt.subplot(1, 2, 2)
     plt.xlabel('Epochs')
-    plt.plot(loss, label='Training Loss')
-    plt.plot(val_loss, label='Validation Loss')
-    plt.legend(loc='upper right')
+    plt.plot(epochs_range, loss, label='Training Loss')
+    plt.plot(epochs_range, val_loss, label='Validation Loss')
+    plt.legend()
     plt.title('Training and Validation Loss')
 
     plt.savefig('graphs/' + model_name + '.png')
