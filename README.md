@@ -8,6 +8,10 @@ This project was undertaken for my dissertation in BSc Hons. Computer Science at
 
 You can view evaluated results of the included models [here](eval/results.csv). Additionally, a verbose log of predictions for the test set for each model can be found in the [eval](eval/) directory. As can be seen from these results, none of the models trained were accurate enough to be practically useful.
 
+### Ackownledgments
+
+**Dr. Jaume Bacardit** (@jaumebp) - Project supervisor.
+
 ## Prerequisites
 
 The simplest way to configure your environment is to install and use [Conda](https://conda.io/). If you have Conda installed you can create a working environment using either of the two following commands.
