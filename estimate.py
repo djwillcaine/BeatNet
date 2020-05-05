@@ -1,4 +1,5 @@
 import os
+import re
 import argparse
 import librosa
 import librosa.display
@@ -45,8 +46,20 @@ def estimate(model_path, image_path, track_path, sample_length):
     image /= 255.0
     image = tf.expand_dims(image, 0)
 
-    result = model.predict(image)
-    print(result[0][0])
+    result = model.predict(image)[0]
+
+    # Format output
+    if len(result) != 1:
+        result = tf.math.argmax(result, axis=0).numpy()
+        m = re.search('\.(\d+)-\d+\.', model_path)
+        if m == None:
+            result = 'Class(%s)' % result
+        else:
+            result = result + int(m.group(1))
+    else:
+        result = result[0]
+
+    print('Estimate: %s BPM' % result)
 
 def create_dir(dir_name):
     try:
@@ -58,10 +71,14 @@ def create_dir(dir_name):
 if __name__ == '__main__' :
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-m', '--model-path', default='model.h5')
-    parser.add_argument('-i', '--image-path', default='temp/image.png')
-    parser.add_argument('-t', '--track-path')
-    parser.add_argument('-l', '--sample-length', type=int, default=2)
+    parser.add_argument('-m', '--model-path', default='model.h5',
+        help='File path to the model to use for estimation.')
+    parser.add_argument('-i', '--image-path', default='temp/image.png',
+        help='File path to a spectrogram to estimate (if not specifying an audio file).')
+    parser.add_argument('-t', '--track-path',
+        help='File path to an audio file to estimate (if not specifying an image file).')
+    parser.add_argument('-l', '--sample-length', type=int, default=10,
+        help='The length (in seconds) of the audio sample to use, if specifying an audio file. Must match what the model was trained with.')
 
     args = parser.parse_args()
 

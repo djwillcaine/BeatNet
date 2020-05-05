@@ -18,7 +18,6 @@ warnings.simplefilter("ignore")
 
 FRAME_RATE = 22050  # Hz
 N_MELS = 40         # Mels
-SAMPLE_LENGTH = 10  # Seconds
 BUFFER = 5          # Seconds
 PROGRESS_BAR_SIZE = 50
 AUGMENTATION_MULTIPLIERS = [0.9, 0.92, 0.94, 0.96, 0.98, 1.0, 1.02, 1.04, 1.06, 1.08, 1.1]
@@ -58,17 +57,17 @@ def load_tracks(lib_xml_file):
     return tracks
 
 
-def generate_augmented_specgrams(output_dir, validation_split, test_split, limits, linear, track): 
+def generate_augmented_specgrams(output_dir, validation_split, test_split, limits, linear, sample_length, track): 
     try:
         audio_file, _ = librosa.load(track['path'], FRAME_RATE)
         audio, _ = librosa.effects.trim(audio_file)
         for m in AUGMENTATION_MULTIPLIERS:
-            plot_and_save_specgram(track, audio, m, output_dir, validation_split, test_split, limits, linear)
+            plot_and_save_specgram(track, audio, m, output_dir, validation_split, test_split, limits, linear, sample_length)
     except:
         print("\nFailed to produce image for: " + track['path'])
 
 
-def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, validation_split, test_split, limits, linear):
+def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, validation_split, test_split, limits, linear, sample_length):
     part = np.random.choice(track['parts'])
     bpm = round(part['bpm'] * augmentation_multiplier)
 
@@ -76,7 +75,7 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, va
         return
 
     frame_rate = int(FRAME_RATE * (bpm / part['bpm']))
-    chunk_length = int(SAMPLE_LENGTH * frame_rate)
+    chunk_length = int(sample_length * frame_rate)
 
     # Choose a random chunk of chunk_length samples 
     i = np.random.randint(part['start'] * FRAME_RATE, part['end'] * FRAME_RATE)
@@ -94,7 +93,7 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, va
     # Configure plot
     plt.figure(figsize=(2.56, 0.4)).add_axes([0, 0, 1, 1])
     plt.axis('off')
-    plt.xlim(0, SAMPLE_LENGTH)
+    plt.xlim(0, sample_length)
     plt.ylim(0, frame_rate / 2)
     
     # Plot specgram
@@ -115,7 +114,7 @@ def plot_and_save_specgram(track, audio, augmentation_multiplier, output_dir, va
     plt.close()
 
 
-def generate_data(lib_xml_file, n, output_dir, validation_split, test_split, limits, linear):
+def generate_data(lib_xml_file, n, output_dir, validation_split, test_split, limits, linear, sample_length):
     print('Loading library...')
     tracks = load_tracks(lib_xml_file)
 
@@ -125,7 +124,7 @@ def generate_data(lib_xml_file, n, output_dir, validation_split, test_split, lim
     for i in range(n):
         samples.append(np.random.choice(tracks))
 
-    func = partial(generate_augmented_specgrams, output_dir, validation_split, test_split, limits, linear)
+    func = partial(generate_augmented_specgrams, output_dir, validation_split, test_split, limits, linear, sample_length)
     pool = multiprocessing.Pool()
     for i, _ in enumerate(pool.imap_unordered(func, samples)):
         progress = (i + 1) / n
@@ -150,13 +149,22 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-p', '--lib_path', default='lib.xml')
-    parser.add_argument('-n', '--num-tracks', type=int, default=1000)
-    parser.add_argument('-o', '--output-dir', default='data')
-    parser.add_argument('-v', '--validation-split', type=float, default=0.2)
-    parser.add_argument('-t', '--test-split', type=float, default=0.1)
-    parser.add_argument('-r', '--range', default='80-180')
-    parser.add_argument('-l', '--linear', action='store_true')
+    parser.add_argument('-p', '--lib_path', default='lib.xml',
+        help='Path to Rekordbox Collection in xml format')
+    parser.add_argument('-n', '--num-tracks', type=int, default=1000,
+        help='Number of tracks to produce data for. 1-2x library size is recommended.')
+    parser.add_argument('-o', '--output-dir', default='data',
+        help='Directory to store generated data in.')
+    parser.add_argument('-v', '--validation-split', type=float, default=0.2,
+        help='Fraction of generated data to be used for the validation set.')
+    parser.add_argument('-t', '--test-split', type=float, default=0.1,
+        help='Fraction of generated data to be used for the test set.')
+    parser.add_argument('-r', '--range', default='80-180',
+        help='Range of BPMs to include in generated data. For example: 80-180')
+    parser.add_argument('-s', '--sample-length', type=int, default=10,
+        help='Length of audio sample (in seconds) to use for each image.')
+    parser.add_argument('-l', '--logarithmic', action='store_true',
+        help='Specifying the flag will produce logarithmic spectrograms instead of mel-spectrograms.')
 
     args = parser.parse_args()
 
@@ -167,4 +175,5 @@ if __name__ == "__main__":
         args.validation_split,
         args.test_split,
         [int(i) for i in args.range.split('-')],
+        args.sample_length,
         args.linear)

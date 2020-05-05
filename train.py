@@ -241,13 +241,20 @@ def create_dir(dir_name):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-b', '--batch-size', type=int, default=128)
-    parser.add_argument('-s', '--steps-per-epoch', type=int, default=100)
-    parser.add_argument('-e', '--epochs', type=int, default=100)
-    parser.add_argument('-d', '--data-dir', default='data')
-    parser.add_argument('-n', '--model-name')
-    parser.add_argument('-o', '--output-mode', choices=['classification', 'regression'], default='classification')
-    parser.add_argument('-a', '--architecture', choices=['deep', 'shallow'], default='shallow')
+    parser.add_argument('-b', '--batch-size', type=int, default=128,
+        help='Batch size for training (try a smaller value to reduce crashes).')
+    parser.add_argument('-s', '--steps-per-epoch', type=int, default=100,
+        help='Training steps per epoch.')
+    parser.add_argument('-e', '--epochs', type=int, default=100,
+        help='Maximum number of epochs to train for.')
+    parser.add_argument('-d', '--data-dir', default='data',
+        help='Directory where the training, validation, and test datasets are stored.')
+    parser.add_argument('-n', '--model-name',
+        help='An optional name for the model.')
+    parser.add_argument('-o', '--output-mode', choices=['classification', 'regression'], default='classification',
+        help='Specify whether to produce a classification or a regression based model.')
+    parser.add_argument('-a', '--architecture', choices=['deep', 'shallow'], default='shallow',
+        help='Specify whether to use the deep or the shallow model architecture.')
 
     args = parser.parse_args()
 

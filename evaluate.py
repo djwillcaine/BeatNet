@@ -117,9 +117,12 @@ def fetch_dataset(ds_dir, limits=(80, 180)):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('model_path')
-    parser.add_argument('-w', '--write-to-file', action='store_true')
-    parser.add_argument('-d', '--data-dir')
+    parser.add_argument('model_path',
+        help='File path to the model to evaluate.')
+    parser.add_argument('-w', '--write-to-file', action='store_true',
+        help='Specifying this will write the results to file instead of outputting to console.')
+    parser.add_argument('-d', '--data-dir',
+        help='The directory to use for the test set. Will be inferred if not specified.')
 
     args = parser.parse_args()
     evaluate(args.model_path, args.write_to_file, args.data_dir)
