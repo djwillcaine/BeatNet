@@ -10,7 +10,9 @@ You can view evaluated results of the included models [here](eval/results.csv). 
 
 ### Ackownledgments
 
-**Dr. Jaume Bacardit** (@jaumebp) - Project supervisor.
+A big thank you goes to **Dr. Jaume Bacardit** (@jaumebp) for being my project supervisor.
+
+Additionally, I'd like to thank [Decizion](https://soundcloud.com/decizionmusic) and [Aperio](https://soundcloud.com/aperio) for their support.
 
 ## Prerequisites
 
