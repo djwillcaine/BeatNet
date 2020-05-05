@@ -22,7 +22,7 @@ def evaluate(model_path, write_to_file, ds_dir):
         ds_dir = os.path.join('data', model_info[0], 'test')
 
     # Fetch test dataset and predict results
-    x, true_values = fetch_dataset(ds_dir, limits)
+    image_paths, x, true_values = fetch_dataset(ds_dir, limits)
     results = model.predict(x)
 
     # Format results
@@ -54,7 +54,8 @@ def evaluate(model_path, write_to_file, ds_dir):
 
     # Output results to file/console
     if write_to_file:
-        file = open('results.csv', 'a')
+        # Log MSE, MAE, accuray1, and accuracy 2 in eval/results.csv
+        file = open(os.path.join('eval', 'results.csv'), 'a')
         file.write('%s,%s,%s,%s,%f,%f,%f,%f\n' % (
             model_info[0],
             model_info[1].capitalize(),
@@ -64,6 +65,13 @@ def evaluate(model_path, write_to_file, ds_dir):
             mae.numpy(),
             acc1,
             acc2))
+        file.close()
+
+        # Log verbose list of predicitons in eval/model_name.csv
+        file = open(os.path.join('eval', '%s.csv' % model.name), 'w')
+        file.write('Image Path,True Value,Predicted Value\n')
+        for vals in zip(image_paths, true_values, pred_values):
+            file.write('%s,%d,%f\n' % vals)
         file.close()
     else:
         print('MSE: ', mse.numpy())
@@ -103,7 +111,7 @@ def fetch_dataset(ds_dir, limits=(80, 180)):
     path_ds = tf.data.Dataset.from_tensor_slices(image_paths)
     image_ds = path_ds.map(img_to_tensor)
 
-    return image_ds, image_bpms
+    return image_paths, image_ds, image_bpms
 
 
 if __name__ == "__main__":
