@@ -1,5 +1,5 @@
 import os
-import argpase
+import argparse
 import matplotlib.pyplot as plt
 import seaborn as sns
 from statistics import median, mean
